@@ -1,0 +1,44 @@
+% Shared TikZ preamble for the WiFi Stick Killer PDFs.
+% Included via `pandoc --include-in-header=pdf-preamble.tex`.
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,calc,backgrounds,shapes.misc}
+
+% Highlighted callout box for important notes.
+\usepackage[most]{tcolorbox}
+\newtcolorbox{callout}[1][Note]{%
+  colback=orange!6, colframe=orange!55!black, coltitle=white,
+  fonttitle=\bfseries, title={#1}, boxrule=0.8pt, arc=2pt,
+  left=3mm, right=3mm, top=2mm, bottom=2mm, breakable}
+
+\tikzset{
+  % generic rounded box
+  box/.style={rectangle, rounded corners=2pt, draw=black!65, fill=blue!7,
+    thick, minimum width=2.8cm, minimum height=1cm, align=center, font=\small},
+  % hardware element (warm tint)
+  hw/.style={box, fill=orange!12},
+  % software element (cool tint)
+  sw/.style={box, fill=blue!7},
+  % callback / glue element
+  cb/.style={box, fill=purple!8, minimum width=2.4cm, minimum height=8mm,
+    font=\footnotesize},
+  % state-machine state
+  st/.style={ellipse, draw=black!70, fill=green!12, thick,
+    minimum width=2.6cm, minimum height=1.1cm, align=center, font=\small\bfseries},
+  % decision diamond
+  dec/.style={diamond, aspect=2.1, draw=black!70, fill=yellow!18, thick,
+    inner sep=1pt, align=center, font=\footnotesize},
+  % terminator (start/stop) pill
+  term/.style={rectangle, rounded corners=6pt, draw=black!70, fill=black!8,
+    thick, minimum width=2.2cm, minimum height=8mm, align=center, font=\footnotesize\bfseries},
+  % numbered ordered step (wide)
+  stepbox/.style={rectangle, rounded corners=2pt, draw=black!60, fill=blue!7,
+    thick, text width=8.6cm, minimum height=8mm, align=left, font=\small},
+  % edge label chip
+  lbl/.style={font=\footnotesize\itshape, fill=white, inner sep=1.5pt},
+  mlbl/.style={font=\footnotesize\ttfamily, fill=white, inner sep=1.5pt},
+  % arrows
+  flow/.style={-{Stealth[length=2.5mm]}, thick},
+  flowback/.style={-{Stealth[length=2.5mm]}, thick, dashed},
+  % lifeline for sequence diagrams
+  life/.style={font=\small\bfseries},
+}

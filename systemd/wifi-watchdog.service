@@ -1,0 +1,37 @@
+[Unit]
+Description=WiFi Watchdog
+Documentation=file:/usr/local/share/wifi-watchdog/README.md
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/wifi-watchdog.env
+ExecStart=/usr/local/sbin/wifi-watchdog.py \
+  --iface ${WIFI_STICK_IFACE} \
+  --serial ${RELAY_SERIAL} \
+  --check-interval ${CHECK_INTERVAL} \
+  --failure-window ${FAILURE_WINDOW} \
+  --min-scan-failures ${MIN_SCAN_FAILURES} \
+  --min-stale-events ${MIN_STALE_EVENTS} \
+  --unhealthy-timeout ${UNHEALTHY_TIMEOUT} \
+  --soft-recovery-cooldown ${SOFT_RECOVERY_COOLDOWN} \
+  --recovery-cooldown ${RECOVERY_COOLDOWN} \
+  --command-timeout ${COMMAND_TIMEOUT} \
+  --ready-timeout ${READY_TIMEOUT} \
+  --ready-poll-interval ${READY_POLL_INTERVAL} \
+  --spoof-dead-file ${SPOOF_DEAD_FILE} \
+  --state-dir ${STATE_DIR} \
+  --soft-command "ifdown --force {iface}" \
+  --soft-command "systemctl restart wpa_supplicant@{iface}.service" \
+  --soft-command "ifup {iface}" \
+  --before-command "ifdown --force {iface}" \
+  --before-command "systemctl stop wpa_supplicant@{iface}.service" \
+  --after-command "systemctl restart wpa_supplicant@{iface}.service" \
+  --after-command "ifup {iface}" \
+  --after-ready-command "systemctl restart eduroambridge.service"
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

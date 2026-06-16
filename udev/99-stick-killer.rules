@@ -1,0 +1,11 @@
+# Stable name for the Arduino/CH341 relay controller.
+#
+# This adapter has no USB serial number, so the rule is tied to the physical USB
+# topology seen in dmesg:
+#
+#   usb 3-1.5.1.2: New USB device found, idVendor=1a86, idProduct=7523
+#   ch341-uart converter now attached to ttyUSB0
+#
+# If the Arduino is moved to another physical USB port, update KERNELS to the
+# new path from dmesg or `udevadm info -a -n /dev/ttyUSBX`.
+SUBSYSTEM=="tty", KERNEL=="ttyUSB*", KERNELS=="3-1.5.1.2", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="7523", GROUP="dialout", MODE="0660", SYMLINK+="stick-killer"
