@@ -90,6 +90,12 @@ class FakeWatchdog(Watchdog):
         self.events.append(f"cmd:{command.format(iface=self.args.iface)}")
 
 
+class MissingRelayWatchdog(FakeWatchdog):
+    def pulse_relay(self):
+        self.events.append("pulse-failed")
+        raise FileNotFoundError(2, "No such file or directory", self.args.serial)
+
+
 class JournalWatchdog(Watchdog):
     def __init__(self, args, journal_output):
         super().__init__(args)
@@ -184,6 +190,47 @@ class WatchdogRecoveryTest(unittest.TestCase):
                     "health:False:COMPLETED",
                 ],
             )
+
+    def test_relay_failure_still_runs_after_commands(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            args = make_args(
+                tmpdir,
+                ready_timeout=1.0,
+                before_command=["systemctl stop wpa_supplicant@{iface}.service"],
+                after_command=["systemctl restart wpa_supplicant@{iface}.service", "ifup {iface}"],
+            )
+            watchdog = MissingRelayWatchdog(args, [Health(True, True, "COMPLETED", 0)])
+            watchdog.hard_required_file.parent.mkdir(parents=True, exist_ok=True)
+            watchdog.hard_required_file.write_text("1", encoding="ascii")
+
+            watchdog.hard_recover("test")
+
+            self.assertEqual(
+                watchdog.events,
+                [
+                    "cmd:systemctl stop wpa_supplicant@wlan-test0.service",
+                    "pulse-failed",
+                    "cmd:systemctl restart wpa_supplicant@wlan-test0.service",
+                    "cmd:ifup wlan-test0",
+                    "health:True:COMPLETED",
+                    "cmd:systemctl restart eduroambridge.service",
+                ],
+            )
+            self.assertFalse(watchdog.hard_required_file.exists())
+
+    def test_relay_failure_records_hard_recovery_cooldown(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            args = make_args(tmpdir, after_ready_command=[], recovery_cooldown=3600.0)
+            watchdog = MissingRelayWatchdog(args, [Health(True, False, "COMPLETED", 0)])
+
+            watchdog.hard_recover("test")
+            self.assertTrue(watchdog.last_hard_recovery_file.exists())
+            self.assertTrue(watchdog.hard_required_file.exists())
+
+            events_before = list(watchdog.events)
+            watchdog.hard_recover("test again")
+
+            self.assertEqual(watchdog.events, events_before)
 
     def test_stale_connection_uses_soft_route_first(self):
         with tempfile.TemporaryDirectory() as tmpdir:

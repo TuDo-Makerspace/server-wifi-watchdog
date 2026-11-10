@@ -397,7 +397,13 @@ class Watchdog:
             for command in self.args.before_command:
                 self.run_formatted_command(command)
 
-            self.pulse_relay()
+            # Run the after-commands even if the relay fails, so WiFi comes back up.
+            relay_ok = True
+            try:
+                self.pulse_relay()
+            except Exception as exc:
+                relay_ok = False
+                logging.error("relay pulse failed (%s), continuing recovery without power-cycle", exc)
 
             if self.args.usb_settle_delay > 0 and not self.args.dry_run:
                 logging.info("waiting %.1fs for USB/network stack to settle", self.args.usb_settle_delay)
@@ -413,7 +419,10 @@ class Watchdog:
                 self.mark_stale_events_handled()
                 self.run_after_ready_commands()
                 self.clear_recovery_markers()
-                logging.warning("hard recovery complete")
+                if relay_ok:
+                    logging.warning("hard recovery complete")
+                else:
+                    logging.warning("hard recovery complete without relay pulse, check relay controller %s", self.args.serial)
             else:
                 self.mark_hard_required()
                 logging.warning("hard recovery did not restore %s; future hard attempts remain cooldown-limited", self.args.iface)
